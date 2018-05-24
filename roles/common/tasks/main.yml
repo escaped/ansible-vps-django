@@ -1,0 +1,38 @@
+---
+
+# update apt-cache if not updated for 12 hours
+- name: check apt last update
+  stat:
+    path: /var/cache/apt
+  register: apt_cache_stat
+
+- name: update apt if needed
+  apt:
+    update_cache: true
+  when: ansible_date_time.epoch|float - apt_cache_stat.stat.mtime > 60*60*12
+
+- name: Install necessities and nice-to-haves
+  apt:
+    name:
+      - ack-grep
+      - apt-transport-https
+      - git
+      - htop
+      - iftop
+      - iotop
+      - mosh
+      - sudo
+      - unzip
+      - vim
+    state: present
+
+- name: set hostname
+  template:
+    src: hostname.j2
+    dest: /etc/hostname
+
+
+- include: users.yml tags=users
+- include: ufw.yml tags=ufw
+- include: security.yml tags=security
+- include: ntp.yml tags=ntp

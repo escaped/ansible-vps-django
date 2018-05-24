@@ -1,0 +1,13 @@
+[Unit]
+Description={{ project }} gunicorn daemon
+After=network.target
+
+[Service]
+User={{ project }}
+Group={{ project }}
+WorkingDirectory={{ home }}
+ExecStart={{ home }}bin/gunicorn --access-logfile - --workers 3 --bind unix:{{ home }}run/gunicorn.sock -p {{ home }}run/gunicorn.pid {{ project }}.wsgi:application
+Environment="ENV_CONFIG={{ home }}.env"
+
+[Install]
+WantedBy=multi-user.target

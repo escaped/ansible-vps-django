@@ -1,0 +1,14 @@
+---
+
+- name: reload systemdctl
+  shell: systemctl daemon-reload
+
+- name: restart website
+  service:
+    name: "{{ project }}"
+    state: restarted
+
+- name: restart nginx
+  service:
+    name: nginx
+    state: restarted

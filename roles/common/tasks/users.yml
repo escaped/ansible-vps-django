@@ -1,0 +1,22 @@
+---
+
+- name: set default shell for useradd
+  lineinfile:
+    dest: /etc/default/useradd
+    regexp: "^    SHELL: "
+    line: "    SHELL: /bin/bash"
+
+- name: Add ssh users
+  user:
+    name: "{{ item.name }}"
+    groups: users,sudo,admin
+    update_password: on_create
+    password: "{{ item.initial_password }}"
+  with_items: "{{ admin_users }}"
+
+- name: add public keys to authorized_keys files
+  authorized_key:
+    user: "{{ item.name }}"
+    key: "{{ item.key }}"
+  with_items: "{{ admin_users }}"
+  when: item.key is defined

@@ -1,0 +1,84 @@
+---
+
+- include: nginx.yml tags=nginx
+
+- name: install required packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - python3-psycopg2
+    - python3-pip
+    - python3-venv
+
+- name: create user
+  user:
+    createhome: true
+    home: "{{ home }}"
+    name: "{{ project }}"
+    state: present
+
+- name: Set authorized key
+  authorized_key:
+    key: "{{ item }}"
+    path: "{{ home }}.ssh/authorized_keys"
+    state: present
+    user: "{{ project }}"
+  with_items: "{{ ssh_keys }}"
+
+- name: create python virtual env
+  pip:
+    name: "{{ item }}"
+    virtualenv_command: "{{ python_bin }} -m venv"
+    virtualenv: "{{ home }}"
+    virtualenv_site_packages: false
+  with_items:
+    - wheel
+    - gunicorn
+    - raven
+  become_user: "{{ project }}"
+
+- name: Create local directories
+  file:
+    group: "{{ project }}"
+    name: "{{ home }}{{ item }}"
+    owner: "{{ project }}"
+    state: directory
+  with_items:
+    - log
+    - run
+  become_user: "{{ project }}"
+
+- name: add service
+  template:
+    src: service.conf.j2
+    dest: "/etc/systemd/system/{{ project }}.service"
+
+- name: enable service
+  systemd:
+    daemon_reload: true
+    enabled: true
+    name: "{{ project }}"
+    state: started
+
+- name: Copy nginx config
+  template:
+    dest: "/etc/nginx/sites-available/{{ project }}"
+    src: nginx.conf.j2
+  notify: restart nginx
+  tags:
+    - nginx
+
+- name: Symlink nginx config
+  file:
+    state: link
+    path: "/etc/nginx/sites-enabled/{{ project }}"
+    src: "/etc/nginx/sites-available/{{ project }}"
+  notify: restart nginx
+
+- name: Allow restart of service
+  lineinfile:
+    path: /etc/sudoers
+    state: present
+    regexp: "^{{ project }}\\s"
+    line: "{{ project }} ALL=NOPASSWD:/bin/systemctl restart {{ project }}"

@@ -1,0 +1,32 @@
+---
+
+- name: Install security-related packages
+  apt:
+    name:
+      - fail2ban
+      - rkhunter
+      - lynis
+    state: present
+
+- name: Copy fail2ban configuration into place
+  template:
+    src: fail2ban.local.j2
+    dest: /etc/fail2ban/jail.local
+  notify: restart fail2ban
+
+- name: Update sshd config to disallow root logins
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^PermitRootLogin"
+    line: "PermitRootLogin no"
+    state: present
+  notify: restart ssh
+
+- name: Update sshd to disallow password authentication
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^PasswordAuthentication"
+    line: "PasswordAuthentication no"
+    backrefs: true
+    state: present
+  notify: restart ssh

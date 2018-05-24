@@ -1,0 +1,23 @@
+---
+
+- name: install nginx packages
+  apt:
+    name: nginx
+    state: present
+
+- name: remove default rule
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: restart nginx
+
+- name: create nginx.service.d dir
+  file:
+    path: /etc/systemd/system/nginx.service.d
+    state: directory
+
+- name: install nginx fix
+  copy:
+    file: nginx.override.conf
+    dest: /etc/systemd/system/nginx.service.d/override.conf
+  notify: reload systemctl
